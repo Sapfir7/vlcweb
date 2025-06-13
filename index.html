@@ -111,6 +111,13 @@
 // ЗАМЕНИ
 // L.tileLayer('...satellite...')
 
+// Добавляем собственную метку с русским названием
+  L.marker([56.34, 30.54])
+    .addTo(map)
+    .bindPopup("Великие Луки")
+    .openPopup();
+
+
 // НА:
   L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${mapTilerKey}&lang=ru`, {
     tileSize: 512,
