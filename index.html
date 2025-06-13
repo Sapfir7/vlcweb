@@ -1,12 +1,9 @@
-// Хранение меток
-        let markers = [];
-        let currentCategory = 'all';
-        let tempMarkerPosition = null;<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта города</title>
+    <title>Карта Великих Лук</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -44,28 +41,9 @@
             margin-bottom: 8px;
         }
 
-        .categories {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 4px 0;
-        }
-
-        .category-btn {
-            padding: 6px 12px;
-            border: 1px solid var(--tg-theme-button-color, #3390ec);
-            background: transparent;
-            border-radius: 16px;
+        .location-info {
             font-size: 12px;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--tg-theme-button-color, #3390ec);
-        }
-
-        .category-btn.active {
-            background: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            color: var(--tg-theme-hint-color, #666);
         }
 
         .map-container {
@@ -78,17 +56,17 @@
             height: 100%;
         }
 
-        .add-marker-btn {
+        .location-btn {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 56px;
-            height: 56px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: var(--tg-theme-button-color, #3390ec);
             color: var(--tg-theme-button-text-color, #ffffff);
             border: none;
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             z-index: 1000;
@@ -98,124 +76,44 @@
             transition: transform 0.2s;
         }
 
-        .add-marker-btn:hover {
+        .location-btn:hover {
             transform: scale(1.1);
         }
 
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            padding: 20px;
+        .user-location-marker {
+            animation: pulse 2s infinite;
         }
 
-        .modal-content {
-            background: var(--tg-theme-bg-color, #ffffff);
-            padding: 24px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
+            }
         }
 
-        .modal h3 {
-            margin-bottom: 16px;
-            font-size: 18px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-            border-radius: 8px;
-            font-size: 14px;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn-primary {
-            background: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
-        }
-
-        .btn-secondary {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            color: var(--tg-theme-text-color, #000000);
-        }
-
-        .btn:hover {
-            opacity: 0.8;
-        }
-
-        .marker-popup {
-            min-width: 200px;
-        }
-
-        .marker-popup h4 {
-            margin-bottom: 8px;
-            font-size: 16px;
-        }
-
-        .marker-popup .category-tag {
-            display: inline-block;
-            padding: 2px 8px;
-            background: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border-radius: 12px;
-            font-size: 11px;
-            margin-bottom: 8px;
-        }
-
-        .marker-popup p {
-            margin-bottom: 8px;
-            font-size: 14px;
+        .leaflet-popup-content {
+            margin: 8px 12px;
             line-height: 1.4;
+            font-size: 13px;
+            min-width: 120px;
         }
 
-        .marker-popup .author {
+        .status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
             font-size: 12px;
-            color: var(--tg-theme-hint-color, #999999);
+            z-index: 1000;
+            display: none;
         }
     </style>
 </head>
@@ -223,47 +121,13 @@
     <div class="container">
         <div class="header">
             <h1>Карта Великих Лук</h1>
-            <div class="categories">
-                <button class="category-btn active" data-category="all">Все</button>
-                <button class="category-btn" data-category="events">События</button>
-                <button class="category-btn" data-category="places">Места</button>
-                <button class="category-btn" data-category="issues">Проблемы</button>
-                <button class="category-btn" data-category="finds">Находки</button>
-            </div>
+            <div class="location-info" id="locationInfo">Загрузка карты...</div>
         </div>
         
         <div class="map-container">
             <div id="map"></div>
-            <button class="add-marker-btn" onclick="openAddMarkerModal()">+</button>
-        </div>
-    </div>
-
-    <div class="modal" id="addMarkerModal">
-        <div class="modal-content">
-            <h3>Добавить метку</h3>
-            <form id="markerForm">
-                <div class="form-group">
-                    <label for="markerTitle">Название</label>
-                    <input type="text" id="markerTitle" required>
-                </div>
-                <div class="form-group">
-                    <label for="markerCategory">Категория</label>
-                    <select id="markerCategory" required>
-                        <option value="events">События</option>
-                        <option value="places">Места</option>
-                        <option value="issues">Проблемы</option>
-                        <option value="finds">Находки</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="markerDescription">Описание</label>
-                    <textarea id="markerDescription" placeholder="Расскажите подробнее..."></textarea>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeAddMarkerModal()">Отмена</button>
-                    <button type="submit" class="btn btn-primary">Добавить</button>
-                </div>
-            </form>
+            <div class="status" id="status"></div>
+            <button class="location-btn" onclick="findMyLocation()" title="Найти моё местоположение">📍</button>
         </div>
     </div>
 
@@ -275,262 +139,72 @@
             tg.expand();
         }
 
-        // Настройки карты
-        const map = L.map('map').setView([56.3402, 30.5455], 13); // Великие Луки
+        // Создание карты с центром на Великих Луках
+        const map = L.map('map').setView([56.3402, 30.5455], 13);
 
-        // Добавление спутниковых тайлов Google Maps
-        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            attribution: '© Google Maps',
-            maxZoom: 20
+        // Добавление спутниковых тайлов (Esri Satellite)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; Esri &mdash; Спутниковые снимки',
+            maxZoom: 18
         }).addTo(map);
 
-        // Добавление маркера текущего местоположения пользователя
-        let userLocationMarker = null;
+        // Добавляем слой с подписями поверх спутниковых снимков
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '',
+            maxZoom: 18,
+            opacity: 0.8
+        }).addTo(map);
 
-        // Функция для добавления маркера местоположения пользователя
-        function addUserLocationMarker(lat, lng) {
+        // Переменные для отслеживания местоположения
+        let userLocationMarker = null;
+        let watchId = null;
+
+        // Обновление информации о местоположении
+        function updateLocationInfo(text) {
+            document.getElementById('locationInfo').textContent = text;
+        }
+
+        // Показ статуса
+        function showStatus(text, duration = 3000) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, duration);
+        }
+
+        // Создание маркера местоположения пользователя
+        function createUserLocationMarker(lat, lng, accuracy = null) {
             if (userLocationMarker) {
                 map.removeLayer(userLocationMarker);
             }
             
-            userLocationMarker = L.marker([lat, lng], {
-                icon: L.divIcon({
-                    className: 'user-location-marker',
-                    html: `<div style="
-                        background: #4285f4; 
-                        width: 16px; 
-                        height: 16px; 
-                        border-radius: 50%; 
-                        border: 3px solid white; 
-                        box-shadow: 0 2px 8px rgba(66,133,244,0.6);
-                        position: relative;
-                    ">
-                        <div style="
-                            position: absolute;
-                            top: -8px;
-                            left: -8px;
-                            width: 32px;
-                            height: 32px;
-                            border-radius: 50%;
-                            background: rgba(66,133,244,0.2);
-                            animation: pulse 2s infinite;
-                        "></div>
-                    </div>
-                    <style>
-                        @keyframes pulse {
-                            0% { transform: scale(0.8); opacity: 1; }
-                            100% { transform: scale(2); opacity: 0; }
-                        }
-                    </style>`,
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8]
-                })
-            }).addTo(map);
+            const icon = L.divIcon({
+                className: 'user-location-marker',
+                html: `<div style="
+                    background: #4285f4; 
+                    width: 16px; 
+                    height: 16px; 
+                    border-radius: 50%; 
+                    border: 3px solid white; 
+                    box-shadow: 0 2px 8px rgba(66,133,244,0.6);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
             
-            userLocationMarker.bindPopup('<b>Ваше местоположение</b>');
-        }
-
-        // Цвета для категорий
-        const categoryColors = {
-            events: '#ff6b6b',
-            places: '#4ecdc4',
-            issues: '#ffa726',
-            finds: '#ab47bc'
-        };
-
-        // Загрузка меток из localStorage
-        function loadMarkers() {
-            const savedMarkers = localStorage.getItem('cityMapMarkers');
-            if (savedMarkers) {
-                markers = JSON.parse(savedMarkers);
-                displayMarkers();
-            }
-        }
-
-        // Сохранение меток в localStorage
-        function saveMarkers() {
-            localStorage.setItem('cityMapMarkers', JSON.stringify(markers));
-        }
-
-        // Отображение меток на карте
-        function displayMarkers() {
-            // Очистка существующих меток
-            map.eachLayer(layer => {
-                if (layer instanceof L.Marker) {
-                    map.removeLayer(layer);
-                }
-            });
-
-            // Добавление меток
-            markers.forEach(markerData => {
-                if (currentCategory === 'all' || markerData.category === currentCategory) {
-                    const marker = L.marker([markerData.lat, markerData.lng], {
-                        icon: createCustomIcon(markerData.category)
-                    }).addTo(map);
-
-                    const popupContent = `
-                        <div class="marker-popup">
-                            <h4>${markerData.title}</h4>
-                            <div class="category-tag">${getCategoryName(markerData.category)}</div>
-                            <p>${markerData.description}</p>
-                            <div class="author">Добавлено: ${markerData.author}</div>
-                        </div>
-                    `;
-                    
-                    marker.bindPopup(popupContent);
-                }
-            });
-        }
-
-        // Создание кастомной иконки
-        function createCustomIcon(category) {
-            return L.divIcon({
-                className: 'custom-marker',
-                html: `<div style="background-color: ${categoryColors[category]}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            });
-        }
-
-        // Получение названия категории
-        function getCategoryName(category) {
-            const names = {
-                events: 'События',
-                places: 'Места',
-                issues: 'Проблемы',
-                finds: 'Находки'
-            };
-            return names[category] || category;
-        }
-
-        // Обработка клика по карте
-        map.on('click', function(e) {
-            tempMarkerPosition = e.latlng;
-        });
-
-        // Открытие модального окна
-        function openAddMarkerModal() {
-            if (!tempMarkerPosition) {
-                alert('Сначала нажмите на карту, чтобы выбрать место для метки');
-                return;
-            }
-            document.getElementById('addMarkerModal').style.display = 'flex';
-        }
-
-        // Закрытие модального окна
-        function closeAddMarkerModal() {
-            document.getElementById('addMarkerModal').style.display = 'none';
-            document.getElementById('markerForm').reset();
-            tempMarkerPosition = null;
-        }
-
-        // Обработка формы добавления метки
-        document.getElementById('markerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+            userLocationMarker = L.marker([lat, lng], { icon }).addTo(map);
             
-            const title = document.getElementById('markerTitle').value;
-            const category = document.getElementById('markerCategory').value;
-            const description = document.getElementById('markerDescription').value;
+            let popupText = '<b>Ваше местоположение</b>';
+            if (accuracy) {
+                popupText += `<br>Точность: ~${Math.round(accuracy)}м`;
+            }
             
-            const newMarker = {
-                id: Date.now(),
-                lat: tempMarkerPosition.lat,
-                lng: tempMarkerPosition.lng,
-                title: title,
-                category: category,
-                description: description,
-                author: tg?.initDataUnsafe?.user?.first_name || 'Анонимный пользователь',
-                timestamp: new Date().toISOString()
-            };
-
-            markers.push(newMarker);
-            saveMarkers();
-            displayMarkers();
-            closeAddMarkerModal();
-
-            // Уведомление Telegram
-            if (tg) {
-                tg.showAlert('Метка успешно добавлена!');
-            }
-        });
-
-        // Переключение категорий
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Обновление активной кнопки
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Обновление текущей категории
-                currentCategory = this.dataset.category;
-                displayMarkers();
-            });
-        });
-
-        // Закрытие модального окна по клику вне его
-        document.getElementById('addMarkerModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAddMarkerModal();
-            }
-        });
-
-        // Инициализация
-        loadMarkers();
-
-        // Улучшенная геолокация с постоянным отслеживанием
-        if (navigator.geolocation) {
-            // Получаем текущее местоположение
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const userLat = position.coords.latitude;
-                    const userLng = position.coords.longitude;
-                    const distance = getDistance(56.3402, 30.5455, userLat, userLng);
-                    
-                    // Добавляем маркер местоположения пользователя
-                    addUserLocationMarker(userLat, userLng);
-                    
-                    if (distance < 50) {
-                        // Если пользователь в районе Великих Лук, показываем его точное местоположение
-                        map.setView([userLat, userLng], 16);
-                    } else {
-                        // Если далеко, показываем центр Великих Лук
-                        map.setView([56.3402, 30.5455], 13);
-                    }
-                },
-                function(error) {
-                    console.log('Не удалось определить местоположение:', error);
-                    // Показываем центр Великих Лук по умолчанию
-                    map.setView([56.3402, 30.5455], 13);
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000 // кэшируем на 5 минут
-                }
-            );
-
-            // Отслеживаем изменения местоположения
-            navigator.geolocation.watchPosition(
-                function(position) {
-                    const userLat = position.coords.latitude;
-                    const userLng = position.coords.longitude;
-                    addUserLocationMarker(userLat, userLng);
-                },
-                function(error) {
-                    console.log('Ошибка отслеживания местоположения:', error);
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 60000 // обновляем каждую минуту
-                }
-            );
-        } else {
-            console.log('Геолокация не поддерживается');
-            map.setView([56.3402, 30.5455], 13);
+            userLocationMarker.bindPopup(popupText);
         }
 
-        // Функция для расчета расстояния между точками
+        // Расчет расстояния между точками
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; // радиус Земли в км
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -541,6 +215,115 @@
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             return R * c;
         }
+
+        // Обработка успешного получения координат
+        function onLocationFound(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            console.log('Местоположение найдено:', lat, lng);
+            
+            createUserLocationMarker(lat, lng, accuracy);
+            
+            // Проверяем, находится ли пользователь в районе Великих Лук
+            const distance = getDistance(56.3402, 30.5455, lat, lng);
+            
+            if (distance < 50) {
+                // Пользователь в районе Великих Лук
+                map.setView([lat, lng], 16);
+                updateLocationInfo(`Вы в Великих Луках (±${Math.round(accuracy)}м)`);
+                showStatus('Местоположение найдено!');
+            } else {
+                // Пользователь далеко от города
+                updateLocationInfo(`Расстояние до Великих Лук: ${distance.toFixed(1)} км`);
+                showStatus('Вы находитесь далеко от Великих Лук');
+            }
+        }
+
+        // Обработка ошибки геолокации
+        function onLocationError(error) {
+            console.log('Ошибка геолокации:', error);
+            let errorText = 'Не удалось определить местоположение';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorText = 'Доступ к геолокации запрещен';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorText = 'Местоположение недоступно';
+                    break;
+                case error.TIMEOUT:
+                    errorText = 'Тайм-аут определения местоположения';
+                    break;
+            }
+            
+            updateLocationInfo(errorText);
+            showStatus(errorText);
+        }
+
+        // Поиск местоположения пользователя
+        function findMyLocation() {
+            if (!navigator.geolocation) {
+                showStatus('Геолокация не поддерживается');
+                return;
+            }
+
+            showStatus('Поиск местоположения...');
+            
+            navigator.geolocation.getCurrentPosition(
+                onLocationFound,
+                onLocationError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 300000
+                }
+            );
+        }
+
+        // Автоматический поиск местоположения при загрузке
+        function initLocation() {
+            updateLocationInfo('Поиск вашего местоположения...');
+            
+            if (navigator.geolocation) {
+                findMyLocation();
+                
+                // Отслеживание изменений местоположения
+                watchId = navigator.geolocation.watchPosition(
+                    onLocationFound,
+                    onLocationError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                updateLocationInfo('Геолокация не поддерживается');
+            }
+        }
+
+        // События карты
+        map.on('load', function() {
+            showStatus('Карта загружена');
+        });
+
+        map.on('click', function(e) {
+            console.log('Клик по карте:', e.latlng);
+        });
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initLocation, 1000); // небольшая задержка для полной загрузки карты
+        });
+
+        // Очистка при закрытии
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
     </script>
 </body>
 </html>
