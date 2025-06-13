@@ -1,359 +1,137 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта Великих Лук</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <title>Карта Великих Лук</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            height: 100vh;
-            overflow: hidden;
-        }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
 
-        .container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+    .search-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      display: flex;
+      gap: 6px;
+    }
 
-        .header {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
-            z-index: 1000;
-        }
+    .search-box input {
+      padding: 6px;
+      font-size: 14px;
+      width: 200px;
+    }
 
-        .header h1 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
+    .search-box button {
+      padding: 6px 10px;
+      font-size: 14px;
+      background: #3390ec;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-        .location-info {
-            font-size: 12px;
-            color: var(--tg-theme-hint-color, #666);
-        }
-
-        .map-container {
-            flex: 1;
-            position: relative;
-        }
-
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-
-        .location-btn {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-
-        .location-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .user-location-marker {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(66, 133, 244, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
-            }
-        }
-
-        .leaflet-popup-content {
-            margin: 8px 12px;
-            line-height: 1.4;
-            font-size: 13px;
-            min-width: 120px;
-        }
-
-        .status {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 1000;
-            display: none;
-        }
-    </style>
+    .search-box button:hover {
+      background: #2678c8;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Карта Великих Лук</h1>
-            <div class="location-info" id="locationInfo">Загрузка карты...</div>
-        </div>
-        
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="status" id="status"></div>
-            <button class="location-btn" onclick="findMyLocation()" title="Найти моё местоположение">📍</button>
-        </div>
-    </div>
 
-    <script>
-        // Инициализация Telegram Web App
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
+<div id="map"></div>
+
+<div class="search-box">
+  <input type="text" id="search" placeholder="Введите адрес" />
+  <button onclick="searchAddress()">🔍</button>
+</div>
+
+<script>
+  // Telegram WebApp API
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+  }
+
+  // Границы Великих Лук (суженные по ширине, расширенные по вертикали)
+  const bounds = L.latLngBounds(
+    [56.2800, 30.5000], // юго-запад
+    [56.4000, 30.6000]  // северо-восток
+  );
+
+  // Инициализация карты
+  const map = L.map('map', {
+    center: [56.34, 30.54],
+    zoom: 14,
+    minZoom: 13,
+    maxZoom: 18,
+    maxBounds: bounds,
+    maxBoundsViscosity: 1.0
+  });
+
+  // MapTiler стиль с API-ключом
+  const mapTilerKey = 'm4YwiuXxbPBzQaJ1PRc0';
+  L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${mapTilerKey}`, {
+    tileSize: 512,
+    zoomOffset: -1,
+    maxZoom: 18,
+    attribution: '&copy; MapTiler & OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Ограничение выхода за пределы
+  map.on('moveend', () => {
+    if (!bounds.contains(map.getCenter())) {
+      map.panInsideBounds(bounds, { animate: true });
+    }
+  });
+
+  // Поиск адреса через Photon API
+  function searchAddress() {
+    const query = document.getElementById('search').value;
+    if (!query) return;
+
+    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ru`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.features.length > 0) {
+          const place = data.features[0];
+          const [lon, lat] = place.geometry.coordinates;
+          const label = place.properties.name || place.properties.label;
+
+          L.marker([lat, lon])
+            .addTo(map)
+            .bindPopup(label || "Найдено место")
+            .openPopup();
+
+          map.setView([lat, lon], 17);
+        } else {
+          alert('Ничего не найдено');
         }
+      })
+      .catch(() => alert('Ошибка при поиске'));
+  }
 
-        // Границы Великолукского района------------------------------------------------------------------------------------------------------
+  // Центрировать карту при загрузке
+  map.fitBounds(bounds);
+</script>
 
-        const bounds = L.latLngBounds(
-            [56.2800, 30.4800],  // юго-запад (было 56.3000)
-            [56.4200, 30.6200]   // северо-восток (было 56.3850)
-        );
-
-
-
-        // Создание карты с центром на Великих Луках и ограничениями
-        const map = L.map('map', {
-            center: [56.3402, 30.5455],
-            zoom: 14,
-            minZoom: 13,        // меньше нельзя приблизить
-            maxZoom: 16,        // максимум приближения
-            maxBounds: bounds,
-            maxBoundsViscosity: 1.0
-        });
-
-
-        L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=m4YwiuXxbPBzQaJ1PRc0', {
-            attribution: '&copy; MapTiler & OpenStreetMap',
-            tileSize: 512,
-            zoomOffset: -1,
-            maxZoom: 18
-        }).addTo(map);
-
-
-
-
- 
-
-
-        // Переменные для отслеживания местоположения
-        let userLocationMarker = null;
-        let watchId = null;
-
-        // Обновление информации о местоположении
-        function updateLocationInfo(text) {
-            document.getElementById('locationInfo').textContent = text;
-        }
-
-        // Показ статуса
-        function showStatus(text, duration = 3000) {
-            const status = document.getElementById('status');
-            status.textContent = text;
-            status.style.display = 'block';
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, duration);
-        }
-
-        // Создание маркера местоположения пользователя
-        function createUserLocationMarker(lat, lng, accuracy = null) {
-            if (userLocationMarker) {
-                map.removeLayer(userLocationMarker);
-            }
-            
-            const icon = L.divIcon({
-                className: 'user-location-marker',
-                html: `<div style="
-                    background: #4285f4; 
-                    width: 16px; 
-                    height: 16px; 
-                    border-radius: 50%; 
-                    border: 3px solid white; 
-                    box-shadow: 0 2px 8px rgba(66,133,244,0.6);
-                "></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-            
-            userLocationMarker = L.marker([lat, lng], { icon }).addTo(map);
-            
-            let popupText = '<b>Ваше местоположение</b>';
-            if (accuracy) {
-                popupText += `<br>Точность: ~${Math.round(accuracy)}м`;
-            }
-            
-            userLocationMarker.bindPopup(popupText);
-        }
-
-        // Расчет расстояния между точками
-        function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // радиус Земли в км
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        // Обработка успешного получения координат
-        function onLocationFound(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-            
-            console.log('Местоположение найдено:', lat, lng);
-            
-            createUserLocationMarker(lat, lng, accuracy);
-            
-            // Проверяем, находится ли пользователь в районе Великих Лук
-            const distance = getDistance(56.3402, 30.5455, lat, lng);
-            
-            if (distance < 50) {
-                // Пользователь в районе Великих Лук
-                map.setView([lat, lng], 16);
-                updateLocationInfo(`Вы в Великих Луках (±${Math.round(accuracy)}м)`);
-                showStatus('Местоположение найдено!');
-            } else {
-                // Пользователь далеко от города
-                updateLocationInfo(`Расстояние до Великих Лук: ${distance.toFixed(1)} км`);
-                showStatus('Вы находитесь далеко от Великих Лук');
-            }
-        }
-
-        // Обработка ошибки геолокации
-        function onLocationError(error) {
-            console.log('Ошибка геолокации:', error);
-            let errorText = 'Не удалось определить местоположение';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorText = 'Доступ к геолокации запрещен';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorText = 'Местоположение недоступно';
-                    break;
-                case error.TIMEOUT:
-                    errorText = 'Тайм-аут определения местоположения';
-                    break;
-            }
-            
-            updateLocationInfo(errorText);
-            showStatus(errorText);
-        }
-
-        // Поиск местоположения пользователя
-        function findMyLocation() {
-            if (!navigator.geolocation) {
-                showStatus('Геолокация не поддерживается');
-                return;
-            }
-
-            showStatus('Поиск местоположения...');
-            
-            navigator.geolocation.getCurrentPosition(
-                onLocationFound,
-                onLocationError,
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 300000
-                }
-            );
-        }
-
-        // Автоматический поиск местоположения при загрузке
-        function initLocation() {
-            updateLocationInfo('Поиск вашего местоположения...');
-            
-            if (navigator.geolocation) {
-                findMyLocation();
-                
-                // Отслеживание изменений местоположения
-                watchId = navigator.geolocation.watchPosition(
-                    onLocationFound,
-                    onLocationError,
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 60000
-                    }
-                );
-            } else {
-                updateLocationInfo('Геолокация не поддерживается');
-            }
-        }
-
-        // События карты
-        map.on('load', function() {
-            showStatus('Карта загружена');
-        });
-
-        map.on('click', function(e) {
-            console.log('Клик по карте:', e.latlng);
-        });
-        
-        // Защита от выхода за пределы карты и ограничение зума ----------------------------------------------------------------------------------------------
-        map.setMinZoom(13);
-        map.setMaxZoom(18);
-        
-        map.on('moveend', function () {
-            if (!bounds.contains(map.getCenter())) {
-                map.panInsideBounds(bounds, { animate: true });
-            }
-        });
-
-
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            // Подгоняем карту под границы района
-            map.fitBounds(bounds);
-            setTimeout(initLocation, 1000);
-        });
-
-        // Очистка при закрытии
-        window.addEventListener('beforeunload', function() {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-        });
-    </script>
 </body>
 </html>
