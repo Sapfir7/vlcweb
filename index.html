@@ -139,8 +139,21 @@
             tg.expand();
         }
 
-        // Создание карты с центром на Великих Луках
-        const map = L.map('map').setView([56.3402, 30.5455], 13);
+        // Границы Великолукского района
+        const bounds = L.latLngBounds(
+            [56.0, 30.0],  // юго-западная точка
+            [56.7, 31.0]   // северо-восточная точка
+        );
+
+        // Создание карты с центром на Великих Луках и ограничениями
+        const map = L.map('map', {
+            center: [56.3402, 30.5455],
+            zoom: 13,
+            minZoom: 11,        // минимальное приближение
+            maxZoom: 18,        // максимальное приближение
+            maxBounds: bounds,  // ограничение области просмотра
+            maxBoundsViscosity: 1.0  // жесткое ограничение границ
+        });
 
         // Добавление спутниковых тайлов (Esri Satellite)
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -315,7 +328,9 @@
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initLocation, 1000); // небольшая задержка для полной загрузки карты
+            // Подгоняем карту под границы района
+            map.fitBounds(bounds);
+            setTimeout(initLocation, 1000);
         });
 
         // Очистка при закрытии
