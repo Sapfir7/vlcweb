@@ -161,6 +161,12 @@
             attribution: '&copy; OpenStreetMap & CartoDB',
             maxZoom: 18
         }).addTo(map);
+        
+        // Добавляем слой с подписями поверх спутниковых снимков
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
 
 
 
