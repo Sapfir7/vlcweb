@@ -120,11 +120,7 @@
 
 
   // Подписи (labels), наложим сверху
-  L.tileLayer(`https://api.maptiler.com/maps/streets/256/{z}/{x}/{y}.png?key=${mapTilerKey}`, {
-    opacity: 0.6,
-    tileSize: 256,
-    maxZoom: 18
-  }).addTo(map);
+
 
   map.on('moveend', () => {
     if (!bounds.contains(map.getCenter())) {
