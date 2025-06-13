@@ -157,18 +157,19 @@
         });
 
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap & CartoDB',
+        // Спутниковая карта (Esri World Imagery)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; Esri &mdash; спутниковые изображения',
             maxZoom: 18
         }).addTo(map);
-
-
-        // Добавляем слой с подписями поверх спутниковых снимков
+        
+        // Подписи (названия городов, улиц)
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
             attribution: '',
             maxZoom: 18,
-            opacity: 0.8
+            opacity: 0.9
         }).addTo(map);
+
 
 
  
