@@ -290,6 +290,12 @@
       opacity: 1;
     }
 
+    .scalable-marker {
+      transition: transform 0.2s ease;
+      transform-origin: bottom center;
+    }
+
+
     /* Модальное окно для добавления маркера */
     .modal-overlay {
       position: fixed;
@@ -459,6 +465,89 @@
         padding: 20px;
       }
     }
+    
+
+    .custom-marker-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.custom-marker-collapsed {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 20px;
+  font-size: 20px;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  border: 3px solid white;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-marker-label {
+  margin-top: 6px;
+  background: white;
+  padding: 8px 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #2d3748;
+  border-radius: 12px;
+  max-width: 220px;
+  text-align: center;
+  word-wrap: break-word;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.custom-marker-wrapper.expanded .custom-marker-label {
+  transform: scale(1.05);
+}
+
+.custom-marker-delete {
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.custom-marker-delete:hover {
+  background: #dc2626;
+}
+
+.hidden {
+  display: none;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  touch-action: manipulation;
+  scroll-behavior: smooth;
+}
+
+.custom-marker, .symbol-marker, .custom-marker-label, .custom-marker-delete {
+  transition: all 0.25s ease-in-out;
+  will-change: transform, opacity;
+}
+
+button, .search-input {
+  transition: all 0.2s ease-in-out;
+}
+
+button:active, .add-button:active {
+  transform: scale(0.97);
+}
+
+
 
     /* Анимация появления */
     .fade-in {
@@ -469,6 +558,8 @@
       from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+
   </style>
 </head>
 <body>
@@ -532,18 +623,83 @@
   }
 
   // Границы карты для Великих Лук
-  const bounds = L.latLngBounds([56.2800, 30.5000], [56.4000, 30.6000]);
+  const bounds = L.latLngBounds(
+    [56.2400, 30.3200],  // Юго-Западная точка
+    [56.4400, 30.7600]   // Северо-Восточная точка
+    );
+    
 
   // Инициализация карты
-  const map = L.map('map', {
-    center: [56.34, 30.54],
-    zoom: 15,
-    minZoom: 12,
-    maxZoom: 19,
-    maxBounds: bounds,
-    zoomControl: true,
-    attributionControl: false
-  });
+    const map = L.map('map', {
+        center: [56.34, 30.54],
+        zoom: 15,
+        minZoom: 12,
+        maxZoom: 19,
+        zoomControl: true,
+        attributionControl: false,
+        maxBounds: bounds,
+        maxBoundsViscosity: 0.7
+    });
+  
+
+
+    let userLocationMarker = null;
+
+    // Запрос геолокации
+    if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+
+        // Добавляем маркер
+        userLocationMarker = L.marker([latitude, longitude], {
+        icon: L.divIcon({
+            html: `<div style="
+            width: 18px;
+            height: 18px;
+            background: #3b82f6;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+            "></div>`,
+            className: '',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        }),
+        interactive: false
+        }).addTo(map);
+
+        // Показываем кнопку "Навигатор"
+        document.getElementById('locateMeBtn').style.display = 'block';
+    }, (error) => {
+        console.warn('Геолокация отклонена или недоступна');
+    }, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    });
+    } else {
+    console.warn('Геолокация не поддерживается');
+    }
+
+    document.getElementById('locateMeBtn').addEventListener('click', () => {
+    if (userLocationMarker) {
+        const latlng = userLocationMarker.getLatLng();
+        map.flyTo(latlng, Math.max(map.getZoom(), 16), { animate: true });
+    }
+    });
+
+
+
+
+    map.on('moveend', () => {
+        const view = map.getBounds();
+        const limit = map.options.maxBounds;
+        if (!limit.contains(view)) {
+            map.panInsideBounds(limit, { animate: true });
+        }
+    });
+
+
 
   // Подключение тайлов
   const mapTilerKey = 'm4YwiuXxbPBzQaJ1PRc0';
@@ -554,126 +710,134 @@
     attribution: '© MapTiler © OpenStreetMap'
   }).addTo(map);
 
-  let markers = [];
+  const allMarkers = new Set();      // все маркеры (в том числе удалённые)
+  const activeMarkers = new Set();   // только активные на карте
   let searchTimeout = null;
   let currentSearchMarker = null;
   let addingMode = null;
   let tempClickPosition = null;
 
   // Создание красивого маркера с фиксированным позиционированием
-  function createMarker(lat, lon, label, icon = '📍', importance = 2, type = 'default') {
-  const markerHtml = `
-    <div class="custom-marker">
-      ${icon} ${label}
-    </div>
+function createMarker(lat, lon, label, icon = '📍', importance = 2, type = 'default') {
+  const container = document.createElement('div');
+  container.className = 'custom-marker-wrapper scalable-marker'; // scalable-marker важно
+
+  container.innerHTML = `
+    <div class="custom-marker-collapsed">${icon}</div>
+    <div class="custom-marker-label hidden">${label}</div>
+    <button class="custom-marker-delete hidden">✖</button>
   `;
 
   const marker = L.marker([lat, lon], {
     icon: L.divIcon({
-      html: markerHtml,
+      html: container,
       className: '',
-      iconSize: [140, 40],
-      iconAnchor: [70, 40],      // Центр по горизонтали, низ по вертикали
-      popupAnchor: [0, 10]       // Попап появляется чуть ниже метки
+      iconSize: [160, 50],         // или подходящие размеры
+      iconAnchor: [80, 50],        // центр по X, низ по Y
+
     }),
-    importance,
-    zIndexOffset: type === 'search' ? 1000 : 0
+    importance
   }).addTo(map);
 
-  // Попап с кнопкой удаления
-  marker.bindPopup(`
-    <div>
-      <div style="font-size:16px; font-weight:500; margin-bottom:8px;">${label}</div>
-      <button onclick="removeMarker(${markers.length})" style="
-        padding: 6px 12px;
-        border: none;
-        background: #ef4444;
-        color: white;
-        border-radius: 8px;
-        font-size: 14px;
-        cursor: pointer;
-      ">Удалить</button>
-    </div>
-  `, {
-    offset: [0, 10],
-    autoClose: false,
-    closeButton: true,
-    className: 'beautiful-popup'
+  // Поведение при клике
+  const markerIcon = container.querySelector('.custom-marker-collapsed');
+  const labelDiv = container.querySelector('.custom-marker-label');
+  const deleteBtn = container.querySelector('.custom-marker-delete');
+
+  markerIcon.addEventListener('click', () => {
+    labelDiv.classList.toggle('hidden');
+    deleteBtn.classList.toggle('hidden');
+    container.classList.toggle('expanded');
   });
-  function removeMarker(index) {
-    const marker = markers[index];
-    if (marker && map.hasLayer(marker)) {
-        map.removeLayer(marker);
-        markers[index] = null;
-    }
-    }
 
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    map.removeLayer(marker);
+    activeMarkers.delete(marker);
+    markers.delete(marker);
+    markers = markers.filter(m => m !== marker);
+  });
 
-  markers.push(marker);
+  allMarkers.add(marker);
+  activeMarkers.add(marker);
   return marker;
 }
 
+
+
+
   // Создание символьного маркера с фиксированным позиционированием
-  function createSymbol(lat, lon, label, symbol = '⛔', color = '#ef4444', importance = 1) {
-    const marker = L.marker([lat, lon], {
-        icon: L.divIcon({
-        html: `<div class="symbol-marker" style="width:44px;height:44px;background:${color};color:white;">${symbol}</div>`,
-        className: '',
-        iconSize: [44, 44],
-        iconAnchor: [22, 44],     // Центр нижнего края круга
-        popupAnchor: [0, 10]
-        }),
-        importance
-    });
+function createSymbol(lat, lon, label, symbol = '⛔', color = '#ef4444', importance = 1) {
+  const container = document.createElement('div');
+  container.className = 'custom-marker-wrapper scalable-marker';
 
-    marker.bindPopup(`
-        <div>
-        <div style="font-size:16px; font-weight:500; margin-bottom:8px;">${label}</div>
-        <button onclick="removeMarker(${markers.length})" style="
-            padding: 6px 12px;
-            border: none;
-            background: #ef4444;
-            color: white;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-        ">Удалить</button>
-        </div>
-    `, {
-        offset: [0, 10],
-        autoClose: false,
-        closeButton: true,
-        className: 'beautiful-popup'
-    });
+  container.innerHTML = `
+    <div class="custom-marker-collapsed" style="background: ${color}; font-size: 22px;">${symbol}</div>
+    <div class="custom-marker-label hidden">${label}</div>
+    <button class="custom-marker-delete hidden">✖</button>
+  `;
 
-    marker.addTo(map);
-    markers.push(marker);
-    return marker;
-    }
+  const marker = L.marker([lat, lon], {
+    icon: L.divIcon({
+      html: container,
+      className: '',
+      iconSize: [60, 60],
+      iconAnchor: [30, 60], // центр по X, низ по Y
+    }),
+    importance
+  }).addTo(map);
 
-  // Управление видимостью маркеров при зуме
-  map.on('zoomend', () => {
-    const zoom = map.getZoom();
-    markers.forEach(marker => {
-      const importance = marker.options.importance || 2;
-      
-      // Улучшенная логика показа маркеров
-      let shouldShow = true;
-      if (zoom < 13 && importance > 1) shouldShow = false;
-      if (zoom < 12 && importance > 0) shouldShow = false;
-      
-      if (shouldShow && !map.hasLayer(marker)) {
-        map.addLayer(marker);
-      } else if (!shouldShow && map.hasLayer(marker)) {
-        map.removeLayer(marker);
-      }
-    });
+  // Поведение при клике
+  const markerIcon = container.querySelector('.custom-marker-collapsed');
+  const labelDiv = container.querySelector('.custom-marker-label');
+  const deleteBtn = container.querySelector('.custom-marker-delete');
+
+  markerIcon.addEventListener('click', () => {
+    labelDiv.classList.toggle('hidden');
+    deleteBtn.classList.toggle('hidden');
+    container.classList.toggle('expanded');
   });
 
-  // Примеры маркеров
-  createSymbol(56.343, 30.542, "Перекрыта дорога", "⛔", "#ef4444", 1);
-  createSymbol(56.3425, 30.5435, "Ремонт", "🚧", "#f59e0b", 1);
-  createMarker(56.3415, 30.5425, "Центральная площадь", "🏛️", 2);
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    map.removeLayer(marker);
+    activeMarkers.delete(marker);
+  });
+
+  allMarkers.add(marker);
+  activeMarkers.add(marker);
+  return marker;
+}
+
+
+
+  // Управление видимостью маркеров при зуме
+    map.on('zoomend', () => {
+    const zoom = map.getZoom();
+
+    // Масштабирование DOM
+    document.querySelectorAll('.scalable-marker').forEach(el => {
+        const scale = zoom < 13 ? 0.6 : zoom < 15 ? 0.8 : 1;
+        el.style.transform = `scale(${scale})`;
+    });
+
+    // Обновление отображения только активных
+    activeMarkers.forEach(marker => {
+        const importance = marker.options.importance || 2;
+        let shouldShow = true;
+        if (zoom < 13 && importance > 1) shouldShow = false;
+        if (zoom < 12 && importance > 0) shouldShow = false;
+
+        if (shouldShow && !map.hasLayer(marker)) {
+        map.addLayer(marker);
+        } else if (!shouldShow && map.hasLayer(marker)) {
+        map.removeLayer(marker);
+        }
+    });
+    });
+
+
+
 
   // Элементы поиска
   const searchInput = document.getElementById('search');
@@ -967,5 +1131,23 @@
   window.closeModal = closeModal;
   window.confirmAddMarker = confirmAddMarker;
 </script>
+<!-- Кнопка "Навигатор" -->
+<button id="locateMeBtn" title="Моё местоположение" style="
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  font-size: 22px;
+  z-index: 1000;
+  display: none;
+">➤</button>
+
 </body>
 </html>
