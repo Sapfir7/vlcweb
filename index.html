@@ -108,12 +108,16 @@
   const mapTilerKey = 'm4YwiuXxbPBzQaJ1PRc0';
 
   // Спутниковое изображение
-  const satellite = L.tileLayer(`https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${mapTilerKey}`, {
+// ЗАМЕНИ
+// L.tileLayer('...satellite...')
+
+// НА:
+  L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${mapTilerKey}&lang=ru`, {
     tileSize: 512,
     zoomOffset: -1,
-    maxZoom: 18,
-    attribution: '&copy; MapTiler & OSM'
+    maxZoom: 18
   }).addTo(map);
+
 
   // Подписи (labels), наложим сверху
   L.tileLayer(`https://api.maptiler.com/maps/streets/256/{z}/{x}/{y}.png?key=${mapTilerKey}`, {
