@@ -20,37 +20,53 @@
       width: 100%;
     }
 
+    .search-toggle {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 1001;
+      background: white;
+      padding: 10px;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+
     .search-box {
       position: absolute;
-      top: 10px;
-      left: 10px;
+      top: 12px;
+      left: 12px;
       z-index: 1000;
       background: white;
       padding: 8px;
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      display: flex;
-      gap: 6px;
+      display: none;
+      flex-direction: column;
+      width: 240px;
     }
 
     .search-box input {
       padding: 6px;
       font-size: 14px;
-      width: 200px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
-    .search-box button {
-      padding: 6px 10px;
+    .suggestions {
+      margin-top: 6px;
+      max-height: 200px;
+      overflow-y: auto;
       font-size: 14px;
-      background: #3390ec;
-      color: white;
-      border: none;
-      border-radius: 4px;
+    }
+
+    .suggestion-item {
+      padding: 4px;
       cursor: pointer;
     }
 
-    .search-box button:hover {
-      background: #2678c8;
+    .suggestion-item:hover {
+      background: #efefef;
     }
   </style>
 </head>
@@ -58,9 +74,13 @@
 
 <div id="map"></div>
 
-<div class="search-box">
-  <input type="text" id="search" placeholder="Введите адрес" />
-  <button onclick="searchAddress()">🔍</button>
+<!-- Лупа -->
+<div class="search-toggle" onclick="toggleSearch()">🔍</div>
+
+<!-- Поле поиска -->
+<div class="search-box" id="searchBox">
+  <input type="text" id="search" placeholder="Введите адрес" oninput="searchSuggestions()" />
+  <div class="suggestions" id="suggestions"></div>
 </div>
 
 <script>
@@ -71,66 +91,79 @@
     tg.expand();
   }
 
-  // Границы Великих Лук (суженные по ширине, расширенные по вертикали)
   const bounds = L.latLngBounds(
-    [56.2800, 30.5000], // юго-запад
-    [56.4000, 30.6000]  // северо-восток
+    [56.2800, 30.5000],
+    [56.4000, 30.6000]
   );
 
-  // Инициализация карты
   const map = L.map('map', {
     center: [56.34, 30.54],
-    zoom: 14,
+    zoom: 15,
     minZoom: 13,
     maxZoom: 18,
     maxBounds: bounds,
     maxBoundsViscosity: 1.0
   });
 
-  // MapTiler стиль с API-ключом
   const mapTilerKey = 'm4YwiuXxbPBzQaJ1PRc0';
-  L.tileLayer(`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${mapTilerKey}`, {
+
+  // Спутниковое изображение
+  const satellite = L.tileLayer(`https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${mapTilerKey}`, {
     tileSize: 512,
     zoomOffset: -1,
     maxZoom: 18,
-    attribution: '&copy; MapTiler & OpenStreetMap contributors'
+    attribution: '&copy; MapTiler & OSM'
   }).addTo(map);
 
-  // Ограничение выхода за пределы
+  // Подписи (labels), наложим сверху
+  L.tileLayer(`https://api.maptiler.com/maps/streets/256/{z}/{x}/{y}.png?key=${mapTilerKey}`, {
+    opacity: 0.6,
+    tileSize: 256,
+    maxZoom: 18
+  }).addTo(map);
+
   map.on('moveend', () => {
     if (!bounds.contains(map.getCenter())) {
       map.panInsideBounds(bounds, { animate: true });
     }
   });
 
-  // Поиск адреса через Photon API
-  function searchAddress() {
-    const query = document.getElementById('search').value;
-    if (!query) return;
-
-    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ru`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.features.length > 0) {
-          const place = data.features[0];
-          const [lon, lat] = place.geometry.coordinates;
-          const label = place.properties.name || place.properties.label;
-
-          L.marker([lat, lon])
-            .addTo(map)
-            .bindPopup(label || "Найдено место")
-            .openPopup();
-
-          map.setView([lat, lon], 17);
-        } else {
-          alert('Ничего не найдено');
-        }
-      })
-      .catch(() => alert('Ошибка при поиске'));
+  // Переключение видимости поля поиска
+  function toggleSearch() {
+    const box = document.getElementById('searchBox');
+    box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
   }
 
-  // Центрировать карту при загрузке
-  map.fitBounds(bounds);
+  // Поиск с подсказками
+  function searchSuggestions() {
+    const query = document.getElementById('search').value;
+    const container = document.getElementById('suggestions');
+    if (!query) {
+      container.innerHTML = '';
+      return;
+    }
+
+    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ru&limit=10`)
+      .then(res => res.json())
+      .then(data => {
+        container.innerHTML = '';
+        data.features.forEach(place => {
+          const label = place.properties.name || place.properties.street || place.properties.city || 'Место';
+          const fullLabel = place.properties.label || label;
+          const item = document.createElement('div');
+          item.className = 'suggestion-item';
+          item.textContent = fullLabel;
+          item.onclick = () => {
+            const [lon, lat] = place.geometry.coordinates;
+            L.marker([lat, lon]).addTo(map)
+              .bindPopup(fullLabel).openPopup();
+            map.setView([lat, lon], 17);
+            container.innerHTML = '';
+          };
+          container.appendChild(item);
+        });
+      });
+  }
 </script>
 
 </body>
