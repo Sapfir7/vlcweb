@@ -325,6 +325,17 @@
         map.on('click', function(e) {
             console.log('Клик по карте:', e.latlng);
         });
+        
+        // Защита от выхода за пределы карты и ограничение зума
+        map.setMinZoom(11);
+        map.setMaxZoom(18);
+        
+        map.on('moveend', function () {
+            if (!bounds.contains(map.getCenter())) {
+                map.panInsideBounds(bounds, { animate: true });
+            }
+        });
+
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
