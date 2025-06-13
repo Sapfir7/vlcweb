@@ -159,18 +159,13 @@
         });
 
 
-        // Спутниковая карта (Esri World Imagery)
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri &mdash; спутниковые изображения',
+        L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=m4YwiuXxbPBzQaJ1PRc0', {
+            attribution: '&copy; MapTiler & OpenStreetMap',
+            tileSize: 512,
+            zoomOffset: -1,
             maxZoom: 18
         }).addTo(map);
-        
-        // Подписи (названия городов, улиц)
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '',
-            maxZoom: 18,
-            opacity: 0.9
-        }).addTo(map);
+
 
 
 
