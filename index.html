@@ -332,8 +332,8 @@
         });
         
         // Защита от выхода за пределы карты и ограничение зума
-        map.setMinZoom(11);
-        map.setMaxZoom(16);
+        map.setMinZoom(14);
+        map.setMaxZoom(18);
         
         map.on('moveend', function () {
             if (!bounds.contains(map.getCenter())) {
