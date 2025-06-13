@@ -631,62 +631,77 @@ button:active, .add-button:active {
 
   // Инициализация карты
     const map = L.map('map', {
-        center: [56.34, 30.54],
-        zoom: 15,
-        minZoom: 12,
-        maxZoom: 19,
-        zoomControl: true,
-        attributionControl: false,
-        maxBounds: bounds,
-        maxBoundsViscosity: 0.7
+    center: [56.34, 30.54],
+    zoom: 15,
+    minZoom: 12,
+    maxZoom: 19,
+    zoomControl: true,
+    attributionControl: false,
+    maxBounds: bounds,
+    maxBoundsViscosity: 0.05
     });
-  
 
 
     let userLocationMarker = null;
 
-    // Запрос геолокации
-    if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition((position) => {
-        const { latitude, longitude } = position.coords;
+if ("geolocation" in navigator) {
+  navigator.geolocation.getCurrentPosition((position) => {
+    const { latitude, longitude } = position.coords;
+    const userLatLng = L.latLng(latitude, longitude);
 
-        // Добавляем маркер
-        userLocationMarker = L.marker([latitude, longitude], {
+    if (bounds.contains(userLatLng)) {
+      userLocationMarker = L.marker(userLatLng, {
         icon: L.divIcon({
-            html: `<div style="
+          html: `<div style="
             width: 18px;
             height: 18px;
             background: #3b82f6;
             border: 3px solid white;
             border-radius: 50%;
             box-shadow: 0 0 8px rgba(0,0,0,0.2);
-            "></div>`,
-            className: '',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+          "></div>`,
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
         }),
         interactive: false
-        }).addTo(map);
+      }).addTo(map);
 
-        // Показываем кнопку "Навигатор"
-        document.getElementById('locateMeBtn').style.display = 'block';
-    }, (error) => {
-        console.warn('Геолокация отклонена или недоступна');
-    }, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-    });
+      const btn = document.getElementById('locateMeBtn');
+      btn.style.display = 'block';
+      btn.addEventListener('click', () => {
+        map.flyTo(userLocationMarker.getLatLng(), Math.max(map.getZoom(), 16), { animate: true });
+      });
+
     } else {
-    console.warn('Геолокация не поддерживается');
+      const notice = document.getElementById('geoOutsideNotice');
+      if (notice) {
+        notice.style.display = 'block';
+        setTimeout(() => {
+          notice.style.display = 'none';
+        }, 5000);
+      }
     }
 
-    document.getElementById('locateMeBtn').addEventListener('click', () => {
-    if (userLocationMarker) {
-        const latlng = userLocationMarker.getLatLng();
-        map.flyTo(latlng, Math.max(map.getZoom(), 16), { animate: true });
-    }
-    });
+    // Всегда центрируем на город
+    map.setView([56.34, 30.54], 15);
+
+  }, (error) => {
+    console.warn('Геолокация отклонена или недоступна');
+    map.setView([56.34, 30.54], 15);
+  }, {
+    enableHighAccuracy: true,
+    timeout: 5000,
+    maximumAge: 0
+  });
+} else {
+  map.setView([56.34, 30.54], 15);
+}
+
+
+
+
+  
 
 
 
@@ -1148,6 +1163,25 @@ function createSymbol(lat, lon, label, symbol = '⛔', color = '#ef4444', import
   z-index: 1000;
   display: none;
 ">➤</button>
+
+<!-- Сообщение "Вы за пределами" -->
+<div id="geoOutsideNotice" style="
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f87171;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: none;
+">
+  Вы за пределами Великих Лук
+</div>
 
 </body>
 </html>
