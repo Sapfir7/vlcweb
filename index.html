@@ -4,99 +4,403 @@
   <meta charset="UTF-8">
   <title>Карта Великих Лук</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body, html {
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
+
     #map {
       height: 100%;
       width: 100%;
+      border-radius: 0;
     }
-    .search-box {
+
+    .search-toggle {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1000;
-      background: white;
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    .search-box input {
-      width: 250px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    .suggestions {
-      margin-top: 5px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .suggestion-item {
-      padding: 6px;
-      cursor: pointer;
-      border-bottom: 1px solid #eee;
-    }
-    .suggestion-item:hover {
-      background: #f0f0f0;
-    }
-    .control-panel {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 12px;
-      padding: 8px;
-      display: flex;
-      gap: 8px;
-    }
-    .control-panel button {
-      padding: 6px 10px;
-      border: none;
-      border-radius: 8px;
-      background: #667eea;
+      top: 16px;
+      left: 16px;
+      z-index: 1001;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      cursor: pointer;
-    }
-    .custom-marker {
-      background: red;
-      width: 30px;
-      height: 30px;
+      padding: 12px;
       border-radius: 50%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      cursor: pointer;
+      transition: all 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-weight: bold;
+      width: 48px;
+      height: 48px;
+      font-size: 18px;
+      border: none;
+    }
+
+    .search-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0,0,0,0.35);
+    }
+
+    .search-toggle:active {
+      transform: translateY(0);
+    }
+
+    .search-toggle.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-2px) scale(0.9);
+    }
+
+    .search-box {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      display: none;
+      flex-direction: column;
+      width: 320px;
+      max-width: calc(100vw - 40px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .search-box.show {
+      display: flex;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+      }
+    }
+
+    .search-box.hiding {
+      animation: slideOut 0.3s ease;
+    }
+
+    .search-input-container {
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .search-box input {
+      padding: 14px 20px;
       font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      border: 2px solid #e1e5e9;
+      border-radius: 12px;
+      outline: none;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .search-box input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .search-box input::placeholder {
+      color: #9ca3af;
+    }
+
+    .close-search {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+    }
+
+    .close-search:hover {
+      background: linear-gradient(135deg, #ff3742 0%, #ff2730 100%);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+    }
+
+    .suggestions {
+      max-height: 280px;
+      overflow-y: auto;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+
+    .suggestions::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .suggestions::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.05);
+      border-radius: 3px;
+    }
+
+    .suggestions::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 3px;
+    }
+
+    .suggestions::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    }
+
+    .suggestion-item {
+      padding: 14px 16px;
+      cursor: pointer;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      transition: all 0.3s ease;
+      background: white;
+      border: 1px solid #f1f5f9;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .suggestion-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .suggestion-item:hover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: translateX(6px) translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      border-color: transparent;
+    }
+
+    .suggestion-item:hover::before {
+      left: 100%;
+    }
+
+    .suggestion-item:active {
+      transform: translateX(4px) translateY(-1px);
+    }
+
+    .suggestion-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .suggestion-address {
+      font-size: 13px;
+      opacity: 0.75;
+      line-height: 1.3;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 24px;
+      color: #667eea;
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #667eea;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 24px;
+      color: #9ca3af;
+      font-style: italic;
+      font-size: 15px;
+    }
+
+    /* Стили для кастомных маркеров */
+    .custom-marker {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      width: 32px;
+      height: 32px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 3px solid white;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      animation: markerDrop 0.4s ease-out;
+    }
+
+    @keyframes markerDrop {
+      0% {
+        transform: rotate(-45deg) translateY(-50px);
+        opacity: 0;
+      }
+      70% {
+        transform: rotate(-45deg) translateY(5px);
+        opacity: 1;
+      }
+      100% {
+        transform: rotate(-45deg) translateY(0);
+      }
+    }
+
+    .marker-icon {
+      color: white;
+      font-size: 16px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* Улучшенные попапы */
+    .leaflet-popup-content-wrapper {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .leaflet-popup-content {
+      margin: 18px 20px;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .leaflet-popup-tip {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Улучшенные контролы карты */
+    .leaflet-control-zoom {
+      border: none !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+      border-radius: 16px !important;
+      overflow: hidden;
+      margin-top: 80px !important; /* Сдвигаем кнопки вниз */
+    }
+
+    .leaflet-control-zoom a {
+      border: none !important;
+      width: 50px !important;
+      height: 50px !important;
+      line-height: 50px !important;
+      font-size: 20px !important;
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(10px);
+      color: #2d3748 !important;
+      transition: all 0.3s ease !important;
+      font-weight: bold;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      color: white !important;
+      transform: scale(1.05);
+    }
+
+    .leaflet-control-zoom a:first-child {
+      border-radius: 16px 16px 0 0 !important;
+    }
+
+    .leaflet-control-zoom a:last-child {
+      border-radius: 0 0 16px 16px !important;
+    }
+
+    /* Улучшения для мобильных устройств */
+    @media (max-width: 480px) {
+      .search-box {
+        width: calc(100vw - 32px);
+        left: 16px;
+        right: 16px;
+      }
+      
+      .leaflet-control-zoom {
+        margin-top: 90px !important;
+      }
+      
+      .leaflet-control-zoom a {
+        width: 45px !important;
+        height: 45px !important;
+        line-height: 45px !important;
+        font-size: 18px !important;
+      }
     }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div class="search-box">
-  <input type="text" id="searchInput" placeholder="Введите адрес...">
+
+<!-- Кнопка поиска -->
+<button class="search-toggle" id="searchToggle" onclick="toggleSearch()">🔍</button>
+
+<!-- Поле поиска -->
+<div class="search-box" id="searchBox">
+  <button class="close-search" onclick="toggleSearch()">×</button>
+  <div class="search-input-container">
+    <input type="text" id="search" placeholder="🔍 Найти место в Великих Луках..." oninput="searchSuggestions()" />
+  </div>
   <div class="suggestions" id="suggestions"></div>
-</div>
-<div class="control-panel">
-  <button onclick="addSymbol('🚫 Перекрытие', [56.34, 30.54])">🚫</button>
-  <button onclick="addSymbol('⚠️ Ремонт', [56.342, 30.542])">⚠️</button>
-  <button onclick="addSymbol('🅿️ Парковка', [56.343, 30.546])">🅿️</button>
 </div>
 
 <script>
+  // Telegram WebApp API
   const tg = window.Telegram?.WebApp;
   if (tg) {
     tg.ready();
@@ -104,70 +408,233 @@
     tg.setHeaderColor('#667eea');
   }
 
-  const bounds = L.latLngBounds([56.28, 30.50], [56.40, 30.60]);
+  const bounds = L.latLngBounds(
+    [56.2800, 30.5000],
+    [56.4000, 30.6000]
+  );
+
   const map = L.map('map', {
     center: [56.34, 30.54],
     zoom: 15,
     minZoom: 13,
-    maxZoom: 19,
+    maxZoom: 18,
     maxBounds: bounds,
+    maxBoundsViscosity: 1.0,
     zoomControl: true
   });
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
+  const mapTilerKey = 'm4YwiuXxbPBzQaJ1PRc0';
+
+  // Красивая карта с русскими надписями
+  L.tileLayer(`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${mapTilerKey}&lang=ru`, {
+    tileSize: 512,
+    zoomOffset: -1,
+    maxZoom: 18,
+    attribution: '© MapTiler © OpenStreetMap'
   }).addTo(map);
 
-  const markerClusterGroup = L.markerClusterGroup();
-  map.addLayer(markerClusterGroup);
-
-  function addSymbol(label, coords) {
-    const marker = L.marker(coords, {
-      icon: L.divIcon({
-        className: 'custom-marker',
-        html: label[0],
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      })
-    }).bindPopup(label);
-
-    markerClusterGroup.addLayer(marker);
-  }
-
-  const searchInput = document.getElementById('searchInput');
-  const suggestionsBox = document.getElementById('suggestions');
+  // Контроль границ карты
+  map.on('moveend', () => {
+    if (!bounds.contains(map.getCenter())) {
+      map.panInsideBounds(bounds, { animate: true });
+    }
+  });
 
   let searchTimeout;
-  searchInput.addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    const query = searchInput.value.trim();
+  let currentMarkers = [];
+
+  // Улучшенное переключение видимости поля поиска
+  function toggleSearch() {
+    const box = document.getElementById('searchBox');
+    const toggle = document.getElementById('searchToggle');
+    const searchInput = document.getElementById('search');
+    
+    if (box.classList.contains('show')) {
+      // Закрываем поиск
+      box.classList.add('hiding');
+      toggle.classList.remove('hidden');
+      
+      setTimeout(() => {
+        box.classList.remove('show', 'hiding');
+        box.style.display = 'none';
+        searchInput.value = '';
+        document.getElementById('suggestions').innerHTML = '';
+      }, 300);
+    } else {
+      // Открываем поиск
+      toggle.classList.add('hidden');
+      box.style.display = 'flex';
+      
+      setTimeout(() => {
+        box.classList.add('show');
+        searchInput.focus();
+      }, 10);
+    }
+  }
+
+  // Создание кастомного маркера
+  function createCustomMarker(lat, lon, label, type = 'location') {
+    const marker = L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: 'custom-marker',
+        html: `<div class="marker-icon">${getMarkerIcon(type)}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+      })
+    });
+    
+    marker.bindPopup(`<strong>${label}</strong>`, {
+      closeButton: true,
+      autoClose: false,
+      closeOnClick: false
+    });
+    return marker;
+  }
+
+  function getMarkerIcon(type) {
+    const icons = {
+      location: '📍',
+      restaurant: '🍴',
+      cafe: '☕',
+      shop: '🛍️',
+      hospital: '🏥',
+      school: '🏫',
+      park: '🌳',
+      bank: '🏦',
+      gas_station: '⛽',
+      pharmacy: '💊',
+      default: '📍'
+    };
+    return icons[type] || icons.default;
+  }
+
+  // Улучшенный поиск с подсказками
+  function searchSuggestions() {
+    const query = document.getElementById('search').value.trim();
+    const container = document.getElementById('suggestions');
+    
     if (!query) {
-      suggestionsBox.innerHTML = '';
+      container.innerHTML = '';
       return;
     }
+
+    // Очищаем предыдущий таймаут
+    clearTimeout(searchTimeout);
+    
+    // Показываем индикатор загрузки
+    container.innerHTML = '<div class="loading">Поиск мест</div>';
+    
+    // Добавляем задержку для уменьшения количества запросов
     searchTimeout = setTimeout(() => {
-      fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&countrycodes=ru&q=${encodeURIComponent(query + ' Великие Луки')}`)
+      // Поиск в границах Великих Лук
+      const searchBounds = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+      
+      fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query + ' Великие Луки')}&lang=ru&limit=10&bbox=${searchBounds}`)
         .then(res => res.json())
         .then(data => {
-          suggestionsBox.innerHTML = '';
-          data.forEach(place => {
-            const div = document.createElement('div');
-            div.className = 'suggestion-item';
-            div.textContent = place.display_name;
-            div.onclick = () => {
-              const lat = parseFloat(place.lat);
-              const lon = parseFloat(place.lon);
-              const marker = L.marker([lat, lon]).bindPopup(place.display_name).addTo(map);
+          container.innerHTML = '';
+          
+          if (data.features.length === 0) {
+            container.innerHTML = '<div class="no-results">🤷‍♂️ Ничего не найдено<br><small>Попробуйте изменить запрос</small></div>';
+            return;
+          }
+
+          data.features.forEach(place => {
+            const props = place.properties;
+            const name = props.name || props.street || props.city || 'Неизвестное место';
+            const address = [props.street, props.housenumber, props.city]
+              .filter(Boolean)
+              .join(', ') || 'Адрес не указан';
+            
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            
+            const icon = getMarkerIcon(getPlaceType(props));
+            
+            item.innerHTML = `
+              <div class="suggestion-name">${icon} ${name}</div>
+              <div class="suggestion-address">${address}</div>
+            `;
+            
+            item.onclick = () => {
+              const [lon, lat] = place.geometry.coordinates;
+              
+              // Удаляем предыдущие маркеры поиска
+              currentMarkers.forEach(marker => map.removeLayer(marker));
+              currentMarkers = [];
+              
+              // Создаем новый маркер
+              const marker = createCustomMarker(lat, lon, name, getPlaceType(props));
+              marker.addTo(map);
+              currentMarkers.push(marker);
+              
+              // Центрируем карту и открываем попап
               map.setView([lat, lon], 17);
-              suggestionsBox.innerHTML = '';
-              searchInput.value = '';
+              setTimeout(() => {
+                marker.openPopup();
+              }, 600);
+              
+              // Закрываем поиск
+              toggleSearch();
             };
-            suggestionsBox.appendChild(div);
+            
+            container.appendChild(item);
           });
+        })
+        .catch(error => {
+          console.error('Ошибка поиска:', error);
+          container.innerHTML = '<div class="no-results">❌ Ошибка поиска<br><small>Проверьте подключение к интернету</small></div>';
         });
-    }, 300);
+    }, 400);
+  }
+
+  // Определение типа места для выбора иконки
+  function getPlaceType(props) {
+    const amenity = props.amenity;
+    const shop = props.shop;
+    
+    if (amenity) {
+      if (['restaurant', 'fast_food', 'bar', 'pub'].includes(amenity)) return 'restaurant';
+      if (['cafe'].includes(amenity)) return 'cafe';
+      if (['hospital', 'clinic'].includes(amenity)) return 'hospital';
+      if (['pharmacy'].includes(amenity)) return 'pharmacy';
+      if (['school', 'university', 'kindergarten'].includes(amenity)) return 'school';
+      if (['park', 'garden'].includes(amenity)) return 'park';
+      if (['bank', 'atm'].includes(amenity)) return 'bank';
+      if (['fuel'].includes(amenity)) return 'gas_station';
+    }
+    
+    if (shop) return 'shop';
+    
+    return 'location';
+  }
+
+  // Закрытие поиска при нажатии Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const box = document.getElementById('searchBox');
+      if (box.classList.contains('show')) {
+        toggleSearch();
+      }
+    }
   });
+
+  // Добавляем несколько популярных мест Великих Лук для примера
+  const popularPlaces = [
+    { lat: 56.3465, lon: 30.5455, name: 'Кремль Великих Луков', type: 'location' },
+    { lat: 56.3421, lon: 30.5234, name: 'Театр драмы им. А.С. Пушкина', type: 'location' },
+    { lat: 56.3445, lon: 30.5345, name: 'Центральная площадь', type: 'location' },
+    { lat: 56.3456, lon: 30.5389, name: 'Парк Победы', type: 'park' }
+  ];
+
+  // Добавляем популярные места на карту (раскомментируй, если нужно)
+  // popularPlaces.forEach(place => {
+  //   createCustomMarker(place.lat, place.lon, place.name, place.type).addTo(map);
+  // });
+
+  console.log('🗺️ Интерактивная карта Великих Лук загружена успешно! 🎉');
 </script>
+
 </body>
 </html>
