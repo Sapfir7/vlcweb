@@ -667,11 +667,16 @@ if ("geolocation" in navigator) {
         interactive: false
       }).addTo(map);
 
-      const btn = document.getElementById('locateMeBtn');
-      btn.style.display = 'block';
-      btn.addEventListener('click', () => {
-        map.flyTo(userLocationMarker.getLatLng(), Math.max(map.getZoom(), 16), { animate: true });
-      });
+      setTimeout(() => {
+        const btn = document.getElementById('locateMeBtn');
+        if (btn) {
+            btn.style.display = 'block';
+            btn.addEventListener('click', () => {
+            map.flyTo(userLocationMarker.getLatLng(), Math.max(map.getZoom(), 16), { animate: true });
+            });
+        }
+        }, 0);
+
 
     } else {
       const notice = document.getElementById('geoOutsideNotice');
