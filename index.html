@@ -148,18 +148,20 @@
         // Создание карты с центром на Великих Луках и ограничениями
         const map = L.map('map', {
             center: [56.3402, 30.5455],
-            zoom: 13,
-            minZoom: 11,        // минимальное приближение
-            maxZoom: 18,        // максимальное приближение
-            maxBounds: bounds,  // ограничение области просмотра
-            maxBoundsViscosity: 1.0  // жесткое ограничение границ
+            zoom: 14,
+            minZoom: 13,        // меньше нельзя приблизить
+            maxZoom: 18,        // максимум приближения
+            maxBounds: bounds,
+            maxBoundsViscosity: 1.0
         });
 
-        // Добавление спутниковых тайлов (Esri Satellite)
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri &mdash; Спутниковые снимки',
+
+        // Добавление спутниковых тайлов (CartoDB Positron)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CartoDB',
             maxZoom: 18
         }).addTo(map);
+
 
         // Добавляем слой с подписями поверх спутниковых снимков
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
