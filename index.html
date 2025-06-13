@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+// Хранение меток
+        let markers = [];
+        let currentCategory = 'all';
+        let tempMarkerPosition = null;<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -275,15 +278,57 @@
         // Настройки карты
         const map = L.map('map').setView([56.3402, 30.5455], 13); // Великие Луки
 
-        // Добавление тайлов карты
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+        // Добавление спутниковых тайлов Google Maps
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '© Google Maps',
+            maxZoom: 20
         }).addTo(map);
 
-        // Хранение меток
-        let markers = [];
-        let currentCategory = 'all';
-        let tempMarkerPosition = null;
+        // Добавление маркера текущего местоположения пользователя
+        let userLocationMarker = null;
+
+        // Функция для добавления маркера местоположения пользователя
+        function addUserLocationMarker(lat, lng) {
+            if (userLocationMarker) {
+                map.removeLayer(userLocationMarker);
+            }
+            
+            userLocationMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'user-location-marker',
+                    html: `<div style="
+                        background: #4285f4; 
+                        width: 16px; 
+                        height: 16px; 
+                        border-radius: 50%; 
+                        border: 3px solid white; 
+                        box-shadow: 0 2px 8px rgba(66,133,244,0.6);
+                        position: relative;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: -8px;
+                            left: -8px;
+                            width: 32px;
+                            height: 32px;
+                            border-radius: 50%;
+                            background: rgba(66,133,244,0.2);
+                            animation: pulse 2s infinite;
+                        "></div>
+                    </div>
+                    <style>
+                        @keyframes pulse {
+                            0% { transform: scale(0.8); opacity: 1; }
+                            100% { transform: scale(2); opacity: 0; }
+                        }
+                    </style>`,
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                })
+            }).addTo(map);
+            
+            userLocationMarker.bindPopup('<b>Ваше местоположение</b>');
+        }
 
         // Цвета для категорий
         const categoryColors = {
@@ -432,18 +477,57 @@
         // Инициализация
         loadMarkers();
 
-        // Попытка определить местоположение пользователя (для точности в районе Великих Лук)
+        // Улучшенная геолокация с постоянным отслеживанием
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                // Проверяем, что пользователь в районе Великих Лук (примерно в радиусе 50 км)
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-                const distance = getDistance(56.3402, 30.5455, userLat, userLng);
-                
-                if (distance < 50) { // в радиусе 50 км от центра города
-                    map.setView([userLat, userLng], 15);
+            // Получаем текущее местоположение
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    const distance = getDistance(56.3402, 30.5455, userLat, userLng);
+                    
+                    // Добавляем маркер местоположения пользователя
+                    addUserLocationMarker(userLat, userLng);
+                    
+                    if (distance < 50) {
+                        // Если пользователь в районе Великих Лук, показываем его точное местоположение
+                        map.setView([userLat, userLng], 16);
+                    } else {
+                        // Если далеко, показываем центр Великих Лук
+                        map.setView([56.3402, 30.5455], 13);
+                    }
+                },
+                function(error) {
+                    console.log('Не удалось определить местоположение:', error);
+                    // Показываем центр Великих Лук по умолчанию
+                    map.setView([56.3402, 30.5455], 13);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000 // кэшируем на 5 минут
                 }
-            });
+            );
+
+            // Отслеживаем изменения местоположения
+            navigator.geolocation.watchPosition(
+                function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    addUserLocationMarker(userLat, userLng);
+                },
+                function(error) {
+                    console.log('Ошибка отслеживания местоположения:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 60000 // обновляем каждую минуту
+                }
+            );
+        } else {
+            console.log('Геолокация не поддерживается');
+            map.setView([56.3402, 30.5455], 13);
         }
 
         // Функция для расчета расстояния между точками
